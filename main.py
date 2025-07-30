@@ -17,6 +17,7 @@ conn = psycopg2.connect(
     port=os.getenv("PG_PORT")
 )
 
+# Model input data nasabah
 class Nasabah(BaseModel):
     nama: str
     no_ktp: str
@@ -24,24 +25,32 @@ class Nasabah(BaseModel):
     phone: str
     alamat: str
 
+# Root endpoint
 @app.get("/")
 def root():
     return {"message": "API is running"}
 
+# Ambil semua data nasabah
 @app.get("/nasabah")
 def get_nasabah():
     cur = conn.cursor()
     cur.execute("SELECT * FROM nasabah")
     rows = cur.fetchall()
+    colnames = [desc[0] for desc in cur.description]  # Ambil nama kolom
     cur.close()
-    return rows
 
+    result = [dict(zip(colnames, row)) for row in rows]
+    return result
+
+# Tambah data nasabah baru
 @app.post("/nasabah")
 def add_nasabah(data: Nasabah):
     cur = conn.cursor()
     try:
-        cur.execute("INSERT INTO nasabah (nama, no_ktp, email, phone, alamat) VALUES (%s, %s, %s, %s, %s)",
-                    (data.nama, data.no_ktp, data.email, data.phone, data.alamat))
+        cur.execute(
+            "INSERT INTO nasabah (nama, no_ktp, email, phone, alamat) VALUES (%s, %s, %s, %s, %s)",
+            (data.nama, data.no_ktp, data.email, data.phone, data.alamat)
+        )
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -50,6 +59,7 @@ def add_nasabah(data: Nasabah):
         cur.close()
     return {"message": "Nasabah ditambahkan"}
 
+# Hapus nasabah berdasarkan no_ktp
 @app.delete("/nasabah/{no_ktp}")
 def delete_nasabah(no_ktp: str):
     cur = conn.cursor()
