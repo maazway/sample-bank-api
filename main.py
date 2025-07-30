@@ -164,13 +164,15 @@ def add_transaksi(data: Transaksi):
 
     cur = conn.cursor()
     try:
-        # Ambil saldo
-        cur.execute("SELECT saldo FROM rekening WHERE no_rekening = %s", (data.no_rekening,))
+        # Ambil id & saldo dari no_rekening
+        cur.execute("SELECT id, saldo FROM rekening WHERE no_rekening = %s", (data.no_rekening,))
         result = cur.fetchone()
         if not result:
             raise HTTPException(status_code=404, detail="Rekening tidak ditemukan")
 
-        saldo = result[0]
+        id_rekening, saldo = result
+
+        # Hitung saldo baru
         if data.jenis == "debit":
             saldo += data.jumlah
         elif data.jenis == "kredit":
@@ -178,18 +180,16 @@ def add_transaksi(data: Transaksi):
                 raise HTTPException(status_code=400, detail="Saldo tidak cukup")
             saldo -= data.jumlah
 
-        # Simpan transaksi
+        # Insert transaksi
         cur.execute(
-            "INSERT INTO transaksi (no_rekening, jenis, jumlah, timestamp) VALUES (%s, %s, %s, NOW())",
-            (data.no_rekening, data.jenis, data.jumlah)
+            "INSERT INTO transaksi (id_rekening, jenis, jumlah, timestamp) VALUES (%s, %s, %s, NOW())",
+            (id_rekening, data.jenis, data.jumlah)
         )
 
-        # Update saldo rekening
-        cur.execute("UPDATE rekening SET saldo = %s WHERE no_rekening = %s", (saldo, data.no_rekening))
+        # Update saldo
+        cur.execute("UPDATE rekening SET saldo = %s WHERE id = %s", (saldo, id_rekening))
 
         conn.commit()
-    except HTTPException:
-        raise
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail=str(e))
