@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 import os
 import psycopg2
@@ -30,17 +30,33 @@ class Nasabah(BaseModel):
 def root():
     return {"message": "API is running"}
 
-# Ambil semua data nasabah
+# Endpoint fleksibel untuk ambil data nasabah
 @app.get("/nasabah")
-def get_nasabah():
+def get_nasabah(fields: str = Query(default=None), no_ktp: str = Query(default=None)):
     cur = conn.cursor()
-    cur.execute("SELECT * FROM nasabah")
+
+    # Pilih kolom (default '*')
+    if fields:
+        try:
+            columns = ", ".join([f.strip() for f in fields.split(",")])
+        except:
+            raise HTTPException(status_code=400, detail="Format 'fields' tidak valid")
+    else:
+        columns = "*"
+
+    # Filter by no_ktp jika ada
+    if no_ktp:
+        query = f"SELECT {columns} FROM nasabah WHERE no_ktp = %s"
+        cur.execute(query, (no_ktp,))
+    else:
+        query = f"SELECT {columns} FROM nasabah"
+        cur.execute(query)
+
     rows = cur.fetchall()
-    colnames = [desc[0] for desc in cur.description]  # Ambil nama kolom
+    colnames = [desc[0] for desc in cur.description]
     cur.close()
 
-    result = [dict(zip(colnames, row)) for row in rows]
-    return result
+    return [dict(zip(colnames, row)) for row in rows]
 
 # Tambah data nasabah baru
 @app.post("/nasabah")
