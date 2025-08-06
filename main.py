@@ -202,6 +202,11 @@ def add_transaksi(data: Transaksi):
 @app.delete("/rekening/{no_rekening}")
 def delete_rekening(no_rekening: str):
     cur = conn.cursor()
+    cur.execute("SELECT * FROM rekening WHERE no_rekening = %s", (no_rekening,))
+    if not cur.fetchone():
+        cur.close()
+        raise HTTPException(status_code=404, detail=f"Rekening {no_rekening} tidak ditemukan")
+
     cur.execute("DELETE FROM rekening WHERE no_rekening = %s", (no_rekening,))
     conn.commit()
     cur.close()
@@ -211,8 +216,12 @@ def delete_rekening(no_rekening: str):
 @app.delete("/transaksi/{id}")
 def delete_transaksi(id: int):
     cur = conn.cursor()
+    cur.execute("SELECT * FROM transaksi WHERE id = %s", (id,))
+    if not cur.fetchone():
+        cur.close()
+        raise HTTPException(status_code=404, detail=f"Transaksi ID {id} tidak ditemukan")
+
     cur.execute("DELETE FROM transaksi WHERE id = %s", (id,))
     conn.commit()
     cur.close()
-    return {"message": f"Transaksi {id} dihapus"}
-
+    return {"message": f"Transaksi ID {id} dihapus"}
