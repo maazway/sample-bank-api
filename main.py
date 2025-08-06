@@ -197,3 +197,22 @@ def add_transaksi(data: Transaksi):
         cur.close()
 
     return {"message": "Transaksi berhasil"}
+
+# Hapus rekening berdasarkan no_rekening
+@app.delete("/rekening/{no_rekening}")
+def delete_rekening(no_rekening: str):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM rekening WHERE no_rekening = %s", (no_rekening,))
+    conn.commit()
+    cur.close()
+    return {"message": f"Rekening {no_rekening} dihapus"}
+
+# Hapus transaksi berdasarkan id
+@app.delete("/transaksi/{id}")
+def delete_transaksi(id: int):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM transaksi WHERE id = %s", (id,))
+    conn.commit()
+    cur.close()
+    return {"message": f"Transaksi {id} dihapus"}
+
